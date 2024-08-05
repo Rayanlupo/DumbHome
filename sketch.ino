@@ -3,10 +3,9 @@
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
 
-
 Servo servo1;
 int EchoPin = 5;
-int TrigPin = 4; 
+int TrigPin = 4;
 int ServoPin = 18;
 int Green = 12;
 int Red = 13;
@@ -19,8 +18,8 @@ Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 const byte KEYPAD_ROWS = 4;
 const byte KEYPAD_COLS = 4;
-byte rowPins[KEYPAD_ROWS] = {27, 26, 25, 33};
-byte colPins[KEYPAD_COLS] = {32, 35, 34, 19};
+byte rowPins[KEYPAD_ROWS] = {14, 27, 26, 25};
+byte colPins[KEYPAD_COLS] = {33, 32, 19, 34};
 char keys[KEYPAD_ROWS][KEYPAD_COLS] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
@@ -29,70 +28,79 @@ char keys[KEYPAD_ROWS][KEYPAD_COLS] = {
 };
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, KEYPAD_ROWS, KEYPAD_COLS);
 
-
-
-
-
 void setup() {
+  
+  
   servo1.attach(ServoPin);
-  pinMode(ServoPin, OUTPUT);
   pinMode(Green, OUTPUT);
-  pinMode(Red, OUTPUT),
+  pinMode(Red, OUTPUT);
   pinMode(TrigPin, OUTPUT);
   pinMode(EchoPin, INPUT);
-  pinMode(21, OUTPUT);
-  pinMode(22, OUTPUT);
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    while (1);
+  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(18, 15);
-  Serial.begin(115200);
+  
+  servo1.write(locked);
 }
 
 void loop() {
-  servo1.write(locked);
- digitalWrite(TrigPin, LOW);
- delayMicroseconds(2);
- digitalWrite(TrigPin, HIGH);
- delayMicroseconds(10);
- digitalWrite(TrigPin, LOW);
- int duration = pulseIn(EchoPin, HIGH);
- distance = (duration * 0.034 / 2);
- if (distance <= 40){
-  display.display();
-display.print("Welcome, please insert the PIN");
-Serial.print("start");
-String PIN = pin();
-  if (PIN == secretCode){
-    Serial.print("acces allowed");
+  digitalWrite(TrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TrigPin, LOW);
+  
+  int duration = pulseIn(EchoPin, HIGH);
+  distance = (duration * 0.034 / 2);
+  
+  if (distance <= 40) {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Welcome, please insert the PIN");
     display.display();
-    display.print("access allowed");
-    servo1.write(unlocked);
-    delay(5000);
-    servo1.write(locked);
+    String PIN = pin();
+    
+    if (PIN == secretCode) {
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print("Access allowed");
+      display.display();
+      servo1.write(unlocked);
+      delay(5000); 
+      servo1.write(locked);
+    } else {
+      Serial.println("Access denied");
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print("Access denied");
+      display.display();
+    }
   }
-  else{
-    display.display();
-    display.print("Access denied");
-  }
- } 
+  
+  delay(500); 
 }
 
-
-String pin(){
+String pin() {
   String code = "";
- 
-  while (code.length() < 4){
+  
+  while (code.length() < 4) {
     char key = keypad.getKey();
-     if (key >= '0' && key <= '9') {
-      code += key;
+    if (key) {
+      if (key >= '0' && key <= '9') {
+        code += key;
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.print("Enter PIN: ");
+        display.print(code);
+        display.display();
+      }
     }
   }
   return code;
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  delay(10); // this speeds up the simulation
 }
